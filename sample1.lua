@@ -1,10 +1,10 @@
 function c_test()
-	--c_xxx()
-	--print(hw)
 	print(A)
 	local pack = A()
-	--print("-------->>>", getmetatable(A).show())
 	pack:show()
+	print("get:", pack:get())
+--	print("getName:", pack:getName())
+	print("set:", pack:set(11))
 end
 
 function c_testInt()

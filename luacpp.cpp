@@ -25,13 +25,97 @@ template<>const char * luacpp::read(lua_State * L, int index)
 
 template<>int luacpp::read(lua_State * L, int index)
 {
-	return (int)luaL_checknumber(L, index);
+	int res = (int)luaL_checknumber(L, index);
+	//printf("----luaL_checknumber---------%d\n", res);
+	return res;
 }
 
 template<>float luacpp::read(lua_State * L, int index)
 {
 	return (float)luaL_checknumber(L, index);
 }
+
+/*---------------------------------------------------------------------------*/ 
+/* push                                                                      */ 
+/*---------------------------------------------------------------------------*/ 
+template<>
+void luacpp::push(lua_State *L, char ret)
+{
+	lua_pushnumber(L, ret);						
+}
+
+template<>
+void luacpp::push(lua_State *L, unsigned char ret)
+{
+	lua_pushnumber(L, ret);						
+}
+
+template<>
+void luacpp::push(lua_State *L, short ret)
+{
+	lua_pushnumber(L, ret);						
+}
+
+template<>
+void luacpp::push(lua_State *L, unsigned short ret)
+{
+	lua_pushnumber(L, ret);						
+}
+
+template<>
+void luacpp::push(lua_State *L, long ret)
+{
+	lua_pushnumber(L, ret);						
+}
+
+template<>
+void luacpp::push(lua_State *L, unsigned long ret)
+{
+	lua_pushnumber(L, ret);						
+}
+
+template<>
+void luacpp::push(lua_State *L, int ret)
+{
+	lua_pushnumber(L, ret);						
+}
+
+template<>
+void luacpp::push(lua_State *L, unsigned int ret)
+{
+	lua_pushnumber(L, ret);						
+}
+
+template<>
+void luacpp::push(lua_State *L, float ret)
+{
+	lua_pushnumber(L, ret);						
+}
+
+template<>
+void luacpp::push(lua_State *L, double ret)
+{
+	lua_pushnumber(L, ret);						
+}
+
+template<>
+void luacpp::push(lua_State *L, char* ret)
+{
+	lua_pushstring(L, ret);						
+}
+
+template<>
+void luacpp::push(lua_State *L, const char* ret)
+{
+	lua_pushstring(L, ret);						
+}
+
+template<>
+void luacpp::push(lua_State *L, bool ret)
+{
+	lua_pushboolean(L, ret);						
+}
+
 
 
 

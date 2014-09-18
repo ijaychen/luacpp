@@ -50,6 +50,15 @@ namespace luacpp{
 		~val2user() { delete ((T*)m_p); }
 	};
 	
+	// destroyer
+	template<typename T>
+	int destroyer(lua_State *L) 
+	{ 
+		printf("-----destroyer--------\n");
+		((user*)lua_touserdata(L, 1))->~user();
+		return 0;
+	}
+	
 	template<typename T>
 	struct class_name
 	{
@@ -68,6 +77,25 @@ namespace luacpp{
 	template<> const char * read(lua_State * L, int index);
 	template<> int read(lua_State * L, int index);
 	template<> float read(lua_State * L, int index);
+	
+	// push a value to lua stack 
+	template<typename T>  
+	void push(lua_State *L, T ret);
+	
+	template<>	void push(lua_State *L, char ret);
+	template<>	void push(lua_State *L, unsigned char ret);
+	template<>	void push(lua_State *L, short ret);
+	template<>	void push(lua_State *L, unsigned short ret);
+	template<>	void push(lua_State *L, long ret);
+	template<>	void push(lua_State *L, unsigned long ret);
+	template<>	void push(lua_State *L, int ret);
+	template<>	void push(lua_State *L, unsigned int ret);
+	template<>	void push(lua_State *L, float ret);
+	template<>	void push(lua_State *L, double ret);
+	template<>	void push(lua_State *L, char* ret);
+	template<>	void push(lua_State *L, const char* ret);
+	template<>	void push(lua_State *L, bool ret);
+	
 
 	//pop
 	template<typename T>
@@ -99,19 +127,23 @@ namespace luacpp{
 	{ 
 		class_name<T>::name(name);
 		lua_newtable(L);
-		printf("class_add:%s\n", name);
-		
-		luaL_newmetatable(L, class_name<T>::name());
+		//luaL_newmetatable(L, class_name<T>::name());
 		lua_pushstring(L,"__index");
+		//luaL_newmetatable(L, class_name<T>::name());
 		lua_pushvalue(L,-2);
-		lua_settable(L,-3);		
+		lua_settable(L,-3);			
+		
+		lua_pushstring(L,"__gc");
+		lua_pushcclosure(L, destroyer<T>, 0);
+		lua_rawset(L, -3);	
 		lua_setglobal(L, name);
 	}
 	
 	template<typename T, typename F>
 	void class_def(lua_State* L, const char* name, F func) 
 	{ 
-		luaL_getmetatable(L, class_name<T>::name());	
+		//luaL_getmetatable(L, class_name<T>::name());	
+		lua_getglobal(L, class_name<T>::name());
 		if(lua_istable(L, -1))
 		{
 			lua_pushstring(L, name);					
@@ -126,10 +158,11 @@ namespace luacpp{
 	void class_con(lua_State* L,F func)
 	{		
 		lua_getglobal(L, class_name<T>::name());
-		luaL_newmetatable(L, class_name<T>::name());
+		//luaL_getmetatable(L, class_name<T>::name());
+		lua_newtable(L);
 		lua_pushstring(L, "__call");
 		lua_pushcclosure(L,func, 0);
-		lua_rawset(L, -3);	
+		lua_rawset(L, -3);			
 		lua_setmetatable(L, -2);
 		lua_pop(L,1);
 	}
@@ -139,7 +172,8 @@ namespace luacpp{
 	{ 
 		printf("----constructor-----\n");
 		new(lua_newuserdata(L, sizeof(val2user<T>))) val2user<T>();
-		luaL_getmetatable(L, class_name<T>::name());
+		//luaL_getmetatable(L, class_name<T>::name());
+		lua_getglobal(L, class_name<T>::name());
 		lua_setmetatable(L, -2);
 		return 1; 
 	}
@@ -147,7 +181,11 @@ namespace luacpp{
 	template<typename RVal, typename T, typename T1=void, typename T2=void, typename T3=void, typename T4=void, typename T5=void>
 	struct mem_functor
 	{
-		static int invoke(lua_State *L) { push(L,(read<T*>(L,1)->*upvalue_<RVal(T::*)(T1,T2,T3,T4,T5)>(L))(read<T1>(L,2),read<T2>(L,3),read<T3>(L,4),read<T4>(L,5),read<T5>(L,6)));; return 1; }
+		static int invoke(lua_State *L) 
+		{ 
+			push(L,(read<T*>(L,1)->*upvalue_<RVal(T::*)(T1,T2,T3,T4,T5)>(L))(read<T1>(L,2),read<T2>(L,3),read<T3>(L,4),read<T4>(L,5),read<T5>(L,6)));
+			return 1; 
+		}
 	};
 	
 	template<typename T>
@@ -157,27 +195,44 @@ namespace luacpp{
 		{
 			T** obj = (T**)luaL_checkudata(L, 1, class_name<T>::name());
 			((*obj)->*upvalue_<void(T::*)()>(L))();
+			return 0;
 		}
 	};
-
-	/*
+	
 	template<typename RTval, typename T> 
-	struct mem_functor<RTval,T,lua_State*>
+	struct mem_functor<RTval,T>
 	{
 		static int invoke(lua_State *L)
 		{ 
 			T** obj = (T**)luaL_checkudata(L, 1, class_name<T>::name());
-			return ((*obj)->*upvalue_<int(T::*)(lua_State*)>(L))(L); 
+			RTval ret = ((*obj)->*upvalue_<RTval(T::*)()>(L))();
+			push(L, ret);
+			return 1; 
 		}
 	};
-	*/
+	
+	template<typename RTval, typename T, typename T1> 
+	struct mem_functor<RTval,T, T1>
+	{
+		static int invoke(lua_State *L)
+		{ 
+			T** obj = (T**)luaL_checkudata(L, 1, class_name<T>::name());
+			RTval ret = ((*obj)->*upvalue_<RTval(T::*)(T1)>(L))(read<T1>(L, 2));
+			push(L, ret);
+			return 1; 
+		}
+	};
 	
 	template<typename RVal, typename T>
 	void push_functor(lua_State *L, RVal (T::*func)()) 
 	{ 
 		lua_pushcclosure(L, mem_functor<RVal,T>::invoke, 1); 
 	}
-	
-	
+		
+	template<typename RVal, typename T, typename T1>
+	void push_functor(lua_State *L, RVal (T::*func)(T1)) 
+	{ 
+		lua_pushcclosure(L, mem_functor<RVal,T, T1>::invoke, 1); 
+	}
 }
 #endif
