@@ -39,7 +39,7 @@ public:
 	
 	virtual ~WorldPacket()
 	{
-		//m_storage.clear();
+		m_storage.clear();
 	}
 
 	uint16_t GetOpcode() const 
@@ -87,7 +87,7 @@ public:
 		PutByte(reinterpret_cast<const uint8_t *>(&val), 1);
 	}
 	
-	uint32_t ReadUShort()
+	uint16_t ReadUShort()
 	{
 		uint16_t val;
 		GetByte(reinterpret_cast<char*>(&val), 2);

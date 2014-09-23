@@ -70,6 +70,8 @@ int main()
 	luacpp::class_add<WorldPacket>(L, "WorldPacket");
 	luacpp::class_con<WorldPacket>(L, luacpp::constructor<WorldPacket, unsigned short>);
 	luacpp::class_def<WorldPacket>(L, "GetOpcode", &WorldPacket::GetOpcode);
+	luacpp::class_def<WorldPacket>(L, "GetSize", &WorldPacket::GetSize);
+	luacpp::class_def<WorldPacket>(L, "WriteUShort", &WorldPacket::WriteUShort);
 	
 	luacpp::call<void>(L, "c_test");
 /*	int nRet = luacpp::call<int>(L, "c_testInt");

@@ -5,8 +5,12 @@ function c_test()
 	print("set:", pack:set(11))
 	
 	local pack = WorldPacket(23, 20)
-	print(pack:GetOpcode())
-	
+	print(pack:GetOpcode())	
+	print(pack:GetSize())
+	pack:WriteUShort(10)
+	pack:WriteUShort(11)
+	pack:WriteUShort(12)
+	print(pack:GetSize())
 end
 
 function c_testInt()
