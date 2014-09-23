@@ -1,10 +1,12 @@
 function c_test()
-	print(A)
 	local pack = A()
 	pack:show()
 	print("get:", pack:get())
---	print("getName:", pack:getName())
 	print("set:", pack:set(11))
+	
+	local pack = WorldPacket(23, 20)
+	print(pack:GetOpcode())
+	
 end
 
 function c_testInt()

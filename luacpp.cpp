@@ -23,6 +23,13 @@ template<>const char * luacpp::read(lua_State * L, int index)
 	return (const char *)luaL_checkstring(L, index);
 }
 
+template<>unsigned short luacpp::read(lua_State * L, int index)
+{
+	unsigned short res = (unsigned short)luaL_checknumber(L, index);
+	//printf("----luaL_checknumber---------%d\n", res);
+	return res;
+}
+
 template<>int luacpp::read(lua_State * L, int index)
 {
 	int res = (int)luaL_checknumber(L, index);
