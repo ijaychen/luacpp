@@ -1,5 +1,4 @@
 #include "luacpp.h"
-#include "world_packet.h"
 
 class base
 {
@@ -66,20 +65,12 @@ int main()
 	luacpp::class_def<A>(L, "set", &A::set);
 	
 	printf("----------------------------\n");
-	
-	luacpp::class_add<WorldPacket>(L, "WorldPacket");
-	luacpp::class_con<WorldPacket>(L, luacpp::constructor<WorldPacket, unsigned short>);
-	luacpp::class_def<WorldPacket>(L, "GetOpcode", &WorldPacket::GetOpcode);
-	luacpp::class_def<WorldPacket>(L, "GetSize", &WorldPacket::GetSize);
-	luacpp::class_def<WorldPacket>(L, "WriteUShort", &WorldPacket::WriteUShort);
-	
+
 	luacpp::call<void>(L, "c_test");
-/*	int nRet = luacpp::call<int>(L, "c_testInt");
+	int nRet = luacpp::call<int>(L, "c_testInt");
 	printf("call:%d\n", nRet);
 	const char * str = luacpp::call<const char*>(L, "c_testStr");
 	printf("call:%s\n", str);
-*/
-	
 
 	return 0;
 }

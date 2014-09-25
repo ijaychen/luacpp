@@ -14,6 +14,38 @@ namespace luacpp{
 
 	void	print_error(lua_State *L, const char* fmt, ...);	
 	
+	template<bool C, typename A, typename B> struct if_ {};
+	template<typename A, typename B>		struct if_<true, A, B> { typedef A type; };
+	template<typename A, typename B>		struct if_<false, A, B> { typedef B type; };
+	
+	template<typename A>
+	struct is_ptr { static const bool value = false; };	
+	template<typename A>
+	struct is_ptr<A*> { static const bool value = true; };
+	
+	template<typename A> 
+	struct is_ref { static const bool value = false; };
+	template<typename A>
+	struct is_ref<A&> { static const bool value = true; };
+	
+	template<typename T>
+	struct ptr2lua { static void invoke(lua_State *L, T input){ if(input) *(T*)lua_newuserdata(L, sizeof(T)) = input; else lua_pushnil(L); } };
+	
+	template<typename A>
+	struct remove_const { typedef A type; };
+	template<typename A>
+	struct remove_const<const A> { typedef A type; };
+	
+	template<typename A>
+	struct base_type { typedef A type; };
+	template<typename A>
+	struct base_type<A*> { typedef A type; };
+	template<typename A>
+	struct base_type<A&> { typedef A type; };
+
+	template<typename A>
+	struct class_type { typedef typename remove_const<typename base_type<A>::type>::type type; };
+	
 	template<typename T>
 	struct class_name
 	{
@@ -58,7 +90,14 @@ namespace luacpp{
 	
 	// push a value to lua stack 
 	template<typename T>  
-	void push(lua_State *L, T ret);
+	void push(lua_State *L, T ret)
+	{
+		if(is_ptr<T>::value){
+			ptr2lua<T>::invoke(L, ret);			
+		}
+		luaL_newmetatable(L, class_name<typename class_type<T>::type>::name());
+		lua_setmetatable(L, -2);
+	}
 	
 	template<>	void push(lua_State *L, char ret);
 	template<>	void push(lua_State *L, unsigned char ret);
@@ -81,8 +120,8 @@ namespace luacpp{
 	template<> void pop(lua_State * L);
 
 	//call
-	template<typename RT>
-	RT call(lua_State * L, const char * name)
+	template<typename RTval>
+	RTval call(lua_State * L, const char * name)
 	{
 		lua_getglobal(L, name);
 		if(lua_isfunction(L, -1))
@@ -96,7 +135,46 @@ namespace luacpp{
 		{
 			print_error(L, "attempt to call a function!");
 		}
-		return pop<RT>(L);
+		return pop<RTval>(L);
+	}
+	
+	template<typename RTval, typename T1>
+	RTval call(lua_State * L, const char * name, T1 arg1)
+	{
+		lua_getglobal(L, name);
+		if(lua_isfunction(L, -1))
+		{			
+			push(L, arg1);
+			if(0 != lua_pcall(L, 1, 1, 0))
+			{
+				print_error(L, lua_tostring(L, -1));
+			}
+		}
+		else
+		{
+			print_error(L, "attempt to call a function!");
+		}
+		return pop<RTval>(L);
+	}
+	
+	template<typename RTval, typename T1, typename T2>
+	RTval call(lua_State * L, const char * name, T1 arg1, T2 arg2)
+	{
+		lua_getglobal(L, name);
+		if(lua_isfunction(L, -1))
+		{			
+			push(L, arg1);
+			push(L, arg2);
+			if(0 != lua_pcall(L, 2, 1, 0))
+			{
+				print_error(L, lua_tostring(L, -1));
+			}
+		}
+		else
+		{
+			print_error(L, "attempt to call a function!");
+		}
+		return pop<RTval>(L);
 	}
 	
 	template<typename T>
@@ -150,7 +228,7 @@ namespace luacpp{
 	int constructor(lua_State *L) 
 	{ 
 		*(T**)lua_newuserdata(L, sizeof(T*)) = new T();
-		luaL_newmetatable(L, class_name<T>::name());
+		luaL_newmetatable(L, class_name<typename class_type<T>::type>::name());
 		lua_setmetatable(L, -2);
 		return 1; 
 	}
@@ -159,7 +237,7 @@ namespace luacpp{
 	int constructor(lua_State *L) 
 	{ 
 		*(T**)lua_newuserdata(L, sizeof(T*)) = new T(read<T1>(L,2));
-		luaL_newmetatable(L, class_name<T>::name());
+		luaL_newmetatable(L, class_name<typename class_type<T>::type>::name());
 		lua_setmetatable(L, -2);
 		return 1; 
 	}
@@ -168,7 +246,16 @@ namespace luacpp{
 	int constructor(lua_State *L)
 	{ 
 		*(T**)lua_newuserdata(L, sizeof(T*)) = new T(read<T1>(L,2), read<T2>(L,3));
-		luaL_newmetatable(L, class_name<T>::name());
+		luaL_newmetatable(L, class_name<typename class_type<T>::type>::name());
+		lua_setmetatable(L, -2);
+		return 1; 
+	}
+	
+	template<typename T, typename T1, typename T2, typename T3>
+	int constructor(lua_State *L)
+	{ 
+		*(T**)lua_newuserdata(L, sizeof(T*)) = new T(read<T1>(L,2), read<T2>(L,3), read<T3>(L,4));
+		luaL_newmetatable(L, class_name<typename class_type<T>::type>::name());
 		lua_setmetatable(L, -2);
 		return 1; 
 	}
