@@ -14,6 +14,7 @@ namespace luacpp{
 
 	void	print_error(lua_State *L, const char* fmt, ...);	
 	
+	struct table;
 	template<bool C, typename A, typename B> struct if_ {};
 	template<typename A, typename B>		struct if_<true, A, B> { typedef A type; };
 	template<typename A, typename B>		struct if_<false, A, B> { typedef B type; };
@@ -87,6 +88,8 @@ namespace luacpp{
 	template<> unsigned short read(lua_State * L, int index);
 	template<> int read(lua_State * L, int index);
 	template<> float read(lua_State * L, int index);
+	template<> table read(lua_State *L, int index);
+	template<> table& read(lua_State *L, int index);
 	
 	// push a value to lua stack 
 	template<typename T>  
@@ -112,12 +115,14 @@ namespace luacpp{
 	template<>	void push(lua_State *L, char* ret);
 	template<>	void push(lua_State *L, const char* ret);
 	template<>	void push(lua_State *L, bool ret);
+	template<>	void push(lua_State *L, table ret);
 	
 	//pop
 	template<typename T>
 	T pop(lua_State * L){	T t = read<T>(L, -1); lua_pop(L, -1); return t;	}
 	
 	template<> void pop(lua_State * L);
+	template<>	table	pop(lua_State *L);
 
 	//call
 	template<typename RTval>
@@ -302,5 +307,77 @@ namespace luacpp{
 	void push_functor(lua_State *L, RVal (T::*func)(T1)) { 
 		lua_pushcclosure(L, mem_functor<RVal,T, T1>::invoke, 1); 
 	}
+	
+	
+	// Table Object on Stack
+	struct table_obj
+	{
+		table_obj(lua_State* L, int index);
+		~table_obj();
+
+		void inc_ref();
+		void dec_ref();
+
+		bool validate();
+
+		template<typename T>
+		void set(const char* name, T object)
+		{
+			if(validate())
+			{
+				lua_pushstring(m_L, name);
+				push(m_L, object);
+				lua_settable(m_L, m_index);
+			}
+		}
+
+		template<typename T>
+		T get(const char* name)
+		{
+			if(validate())
+			{
+				lua_pushstring(m_L, name);
+				lua_gettable(m_L, m_index);
+			}
+			else
+			{
+				lua_pushnil(m_L);
+			}
+
+			return pop<T>(m_L);
+		}
+
+		lua_State*		m_L;
+		int				m_index;
+		const void*		m_pointer;
+		int				m_ref;
+	};
+	
+	// Table Object Holder
+	struct table
+	{
+		table(lua_State* L);
+		table(lua_State* L, int index);
+		table(lua_State* L, const char* name);
+		table(const table& input);
+		~table();
+
+		template<typename T>
+		void set(const char* name, T object)
+		{
+			m_obj->set(name, object);
+		}
+
+		template<typename T>
+		T get(const char* name)
+		{
+			return m_obj->get<T>(name);
+		}
+
+		table_obj*		m_obj;
+	};
+	
+	int add_ref_table(lua_State *L, table t);
+	table get_ref_table(lua_State * L, int ref);
 }
 #endif

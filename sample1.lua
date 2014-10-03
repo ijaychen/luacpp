@@ -1,3 +1,4 @@
+require "print_r"
 function c_test()
 	local obj = A()
 	obj:show()
@@ -16,3 +17,22 @@ function c_testStr()
 end
 
 
+function c_testTable(arg)
+	print(arg)
+	--print_r(arg)
+	print(arg.name)
+end
+
+function return_table(arg)
+	local ret = {}
+	ret.name = arg
+	return ret
+end
+
+function c_initObj(obj)
+	local ret = {}
+	ret.__gc = print("-----------------------------------------------------ret gc")
+	ret.name = "hello world!!!!!"
+	print(ret)
+	obj:bind(ret)
+end
